@@ -2,6 +2,7 @@ package com.smallsoho.mcplugin.image.webp
 
 import com.smallsoho.mcplugin.image.Const
 import com.smallsoho.mcplugin.image.Config
+import com.smallsoho.mcplugin.image.ImagePlugin
 import com.smallsoho.mcplugin.image.utils.*
 import org.gradle.api.Project
 import java.io.File
@@ -10,7 +11,7 @@ class WebpUtils {
 
     companion object {
         private const val VERSION_SUPPORT_WEBP = 14 //api>=14设设备支持webp
-        private const val TAG = "Webp"
+        private const val TAG = "WebpUtils"
 
         private fun isPNGConvertSupported(project: Project): Boolean {
             return AndroidUtil.getMinSdkVersion(project) >= VERSION_SUPPORT_WEBP
@@ -18,10 +19,19 @@ class WebpUtils {
 
         private fun formatWebp(imgFile: File) {
             if (ImageUtil.isImage(imgFile)) {
-                val webpFile = File("${imgFile.path.substring(0, imgFile.path.lastIndexOf("."))}.webp")
+                val webpFile =
+                    File("${imgFile.path.substring(0, imgFile.path.lastIndexOf("."))}.webp")
                 Tools.cmd("cwebp", "${imgFile.path} -o ${webpFile.path} -m 6 -quiet")
-                if (webpFile.length() < imgFile.length()) {
-                    LogUtil.log(TAG, imgFile.path, imgFile.length().toString(), webpFile.length().toString())
+                val lengthWebp = webpFile.length()
+                val lengthSrc = imgFile.length()
+                val isNewLessOld = lengthWebp < lengthSrc
+
+                val reportBean = ImagePlugin.allImageListReport[imgFile.path]!!
+                reportBean.newSize = lengthWebp
+                reportBean.oldSize = lengthSrc
+                reportBean.toWebpState = if (isNewLessOld) "1" else "-1";
+
+                if (isNewLessOld) {
                     if (imgFile.exists()) {
                         imgFile.delete()
                     }
@@ -36,19 +46,19 @@ class WebpUtils {
         }
 
         fun securityFormatWebp(imgFile: File, config: Config, project: Project) {
-            if(!isPNGConvertSupported(project)) {
+            if (!isPNGConvertSupported(project)) {
                 throw Exception("minSDK < 14, Webp is not Support! Please choose other optimize Type!")
             }
             if (ImageUtil.isImage(imgFile)) {
-                if(config.isSupportAlphaWebp) {
+                if (config.isSupportAlphaWebp) {
                     formatWebp(imgFile)
                 } else {
-                    if(imgFile.name.endsWith(Const.JPG) || imgFile.name.endsWith(Const.JPEG)) {
+                    if (imgFile.name.endsWith(Const.JPG) || imgFile.name.endsWith(Const.JPEG)) {
                         //jpg
                         formatWebp(imgFile)
-                    } else if(imgFile.name.endsWith(Const.PNG) ){
+                    } else if (imgFile.name.endsWith(Const.PNG)) {
                         //png
-                        if(!ImageUtil.isAlphaPNG(imgFile)) {
+                        if (!ImageUtil.isAlphaPNG(imgFile)) {
                             //不包含透明通道
                             formatWebp(imgFile)
                         } else {

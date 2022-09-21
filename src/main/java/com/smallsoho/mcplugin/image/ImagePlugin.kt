@@ -10,12 +10,19 @@ import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.Task
+import java.io.BufferedWriter
 import java.io.File
+import java.io.FileWriter
 import java.util.concurrent.Callable
 import java.util.concurrent.Executors
 import java.util.concurrent.Future
 
+
 class ImagePlugin : Plugin<Project> {
+    companion object {
+        private const val TAG = "ImagePlugin"
+        val allImageListReport = HashMap<String, ReportBean>()
+    }
 
     private lateinit var mcImageProject: Project
     private lateinit var mcImageConfig: Config
@@ -25,6 +32,28 @@ class ImagePlugin : Plugin<Project> {
 
     var isDebugTask = false
     var isContainAssembleTask = false
+
+
+    class ReportBean() {
+        companion object {
+            const val BIG_IN_LIST = "1"
+            const val IMAGE_UNKNOWN = ""
+
+            const val STATE_UNKNOWN = ""
+            const val STATE_WHITE_LIST = "1"
+
+        }
+
+        var name = ""
+        var path = ""
+        var isInWhite = STATE_UNKNOWN
+        var isBigImage = IMAGE_UNKNOWN //
+        var newSize: Long = 0
+        var oldSize: Long = 0
+        var toWebpState = ""
+
+    }
+
 
     override fun apply(project: Project) {
 
@@ -45,9 +74,13 @@ class ImagePlugin : Plugin<Project> {
         project.gradle.taskGraph.whenReady {
             it.allTasks.forEach { task ->
                 val taskName = task.name
-                if (taskName.contains("assemble") || taskName.contains("resguard") || taskName.contains("bundle")) {
+                if (taskName.contains("assemble") || taskName.contains("resguard") || taskName.contains(
+                        "bundle"
+                    )
+                ) {
                     if (taskName.toLowerCase().endsWith("debug") &&
-                            taskName.toLowerCase().contains("debug")) {
+                        taskName.toLowerCase().contains("debug")
+                    ) {
                         isDebugTask = true
                     }
                     isContainAssembleTask = true
@@ -102,6 +135,38 @@ class ImagePlugin : Plugin<Project> {
                     val start = System.currentTimeMillis()
 
                     mtDispatchOptimizeTask(imageFileList)
+
+                    LogUtil.log(
+                        TAG,
+                        "report all img",
+                        "-----ReportBeans-----allImageListReport=${allImageListReport.size} imageFileList=${imageFileList.size}"
+                    )
+
+                    val toolsDir = FileUtil.getToolsDir()
+
+                    val csv = "report.csv"
+                    val csvFile = File(toolsDir, csv)
+                    if (csvFile.exists()) {
+                        csvFile.delete()
+                    }
+
+                    val fileWriter = FileWriter(csvFile)
+                    val out = BufferedWriter(fileWriter)
+                    out.write("name,inWhite,toWebpState,isBitImage?,newSize,oldSize,disSize,路径")
+
+                    allImageListReport.keys.forEach {
+                        val reportBean = allImageListReport[it]!!
+                        out.newLine()
+                        val dis = reportBean.newSize - reportBean.oldSize
+                        val line =
+                            "${reportBean.name},${reportBean.isInWhite},${reportBean.toWebpState},${reportBean.isBigImage},${reportBean.newSize},${reportBean.oldSize},$dis,${reportBean.path}"
+                        out.write(line)
+                    }
+                    out.flush()
+                    fileWriter.close()
+
+                    LogUtil.log("save reports to ${csvFile.path}")
+
                     LogUtil.log(sizeInfo())
                     LogUtil.log("---- McImage Plugin End ----, Total Time(ms) : ${System.currentTimeMillis() - start}")
                 }
@@ -117,8 +182,16 @@ class ImagePlugin : Plugin<Project> {
                 }
 
                 //inject task
-                (project.tasks.findByName(chmodTask.name) as Task).dependsOn(mergeResourcesTask.taskDependencies.getDependencies(mergeResourcesTask))
-                (project.tasks.findByName(mcPicTask.name) as Task).dependsOn(project.tasks.findByName(chmodTask.name) as Task)
+                (project.tasks.findByName(chmodTask.name) as Task).dependsOn(
+                    mergeResourcesTask.taskDependencies.getDependencies(
+                        mergeResourcesTask
+                    )
+                )
+                (project.tasks.findByName(mcPicTask.name) as Task).dependsOn(
+                    project.tasks.findByName(
+                        chmodTask.name
+                    ) as Task
+                )
                 mergeResourcesTask.dependsOn(project.tasks.findByName(mcPicTask.name))
 
             }
@@ -126,7 +199,12 @@ class ImagePlugin : Plugin<Project> {
 
     }
 
-    private fun traverseResDir(file: File, imageFileList: ArrayList<File>, cacheList: ArrayList<String>, iBigImage: IBigImage) {
+    private fun traverseResDir(
+        file: File,
+        imageFileList: ArrayList<File>,
+        cacheList: ArrayList<String>,
+        iBigImage: IBigImage
+    ) {
         if (cacheList.contains(file.absolutePath)) {
             return
         } else {
@@ -146,20 +224,58 @@ class ImagePlugin : Plugin<Project> {
     }
 
     private fun filterImage(file: File, imageFileList: ArrayList<File>, iBigImage: IBigImage) {
-        if (mcImageConfig.whiteList.contains(file.name) || !ImageUtil.isImage(file)) {
+        val inWhiteList = mcImageConfig.whiteList.contains(file.name)
+        if (inWhiteList || !ImageUtil.isImage(file)) {
+            if (inWhiteList) {
+                val reportBean = createReportBean(file)
+                reportBean.isInWhite = ReportBean.STATE_WHITE_LIST;
+                allImageListReport[reportBean.path] = reportBean // save all img ,add path
+            }
             return
         }
+
+        val reportBean = createReportBean(file)
+        allImageListReport[reportBean.path] = reportBean // save all img ,add path
+
+
         if (((mcImageConfig.isCheckSize && ImageUtil.isBigSizeImage(file, mcImageConfig.maxSize))
-                        || (mcImageConfig.isCheckPixels
-                        && ImageUtil.isBigPixelImage(file, mcImageConfig.maxWidth, mcImageConfig.maxHeight)))
-                && !mcImageConfig.bigImageWhiteList.contains(file.name)) {
-            iBigImage.onBigImage(file)
+                    || (mcImageConfig.isCheckPixels
+                    && ImageUtil.isBigPixelImage(
+                file,
+                mcImageConfig.maxWidth,
+                mcImageConfig.maxHeight
+            )))
+        ) {
+            val contains = mcImageConfig.bigImageWhiteList.contains(file.name)
+
+
+            if (!contains) {
+                iBigImage.onBigImage(file)
+            } else {
+                reportBean.isBigImage = ReportBean.BIG_IN_LIST // add image big
+            }
+
         }
         imageFileList.add(file)
     }
 
+    private fun createReportBean(file: File): ReportBean {
+        val reportBean = ReportBean()
+        reportBean.path = file.path!!
+        reportBean.name = file.name!!
+        return reportBean
+    }
+
     private fun mtDispatchOptimizeTask(imageFileList: ArrayList<File>) {
-        if (imageFileList.size == 0 || bigImgList.isNotEmpty()) {
+        val notEmpty = bigImgList.isNotEmpty()
+        val size = imageFileList.size
+        LogUtil.log(
+            TAG,
+            "mtDispatchOptimizeTask",
+            " imageFileList.size=$size bigImgList.notEmpty=$notEmpty"
+        )
+
+        if (size == 0 || notEmpty) {
             return
         }
         val coreNum = Runtime.getRuntime().availableProcessors()
@@ -184,6 +300,7 @@ class ImagePlugin : Plugin<Project> {
                 try {
                     f.get()
                 } catch (ignore: Exception) {
+                    LogUtil.log(ignore)
                 }
             }
         }
@@ -220,9 +337,11 @@ class ImagePlugin : Plugin<Project> {
 
     private fun checkBigImage() {
         if (bigImgList.size != 0) {
-            val stringBuffer = StringBuffer("You have big Imgages with big size or large pixels," +
-                    "please confirm whether they are necessary or whether they can to be compressed. " +
-                    "If so, you can config them into bigImageWhiteList to fix this Exception!!!\n")
+            val stringBuffer = StringBuffer(
+                "You have big Imgages with big size or large pixels," +
+                        "please confirm whether they are necessary or whether they can to be compressed. " +
+                        "If so, you can config them into bigImageWhiteList to fix this Exception!!!\n"
+            )
             for (i: Int in 0 until bigImgList.size) {
                 stringBuffer.append(bigImgList[i])
                 stringBuffer.append("\n")

@@ -1,9 +1,16 @@
 package com.smallsoho.mcplugin.image.utils
 
 import com.smallsoho.mcplugin.image.Const
+import java.awt.Dimension
 import java.io.File
 import java.io.FileInputStream
+import java.io.IOException
 import javax.imageio.ImageIO
+import javax.imageio.ImageReader
+import javax.imageio.stream.FileImageInputStream
+
+import javax.imageio.stream.ImageInputStream
+
 
 class ImageUtil {
 
@@ -47,12 +54,72 @@ class ImageUtil {
 
         fun isBigPixelImage(imgFile: File, maxWidth: Int, maxHeight: Int): Boolean {
             if (isImage(imgFile)) {
-                val sourceImg = ImageIO.read(FileInputStream(imgFile))
-                if (sourceImg.height > maxHeight || sourceImg.width > maxWidth) {
-                    return true
+                try {
+
+                    val sourceImg = getImageDim(imgFile.path)
+                    if (sourceImg!!.height > maxHeight || sourceImg.width > maxWidth) {
+                        return true
+                    }
+                } catch (e: Exception) {
+                    LogUtil.log("isBigPixelImage() called with: imgFile = $imgFile, maxWidth = $maxWidth, maxHeight = $maxHeight")
+                    LogUtil.log(e)
+                    throw e
                 }
             }
             return false
         }
+
+        /**
+         * 获取图片的分辨率
+         *
+         * @param path
+         * @return
+         */
+        fun getImageDim(path: String?): Dimension? {
+            var result: Dimension? = null
+            val suffix = getFileSuffix(path)
+            //解码具有给定后缀的文件
+            val iter: Iterator<ImageReader> = ImageIO.getImageReadersBySuffix(suffix)
+            println(path)
+            if (iter.hasNext()) {
+                val reader: ImageReader = iter.next()
+                try {
+                    val stream: ImageInputStream = FileImageInputStream(
+                        File(
+                            path
+                        )
+                    )
+                    reader.setInput(stream)
+                    val width: Int = reader.getWidth(reader.getMinIndex())
+                    val height: Int = reader.getHeight(reader.getMinIndex())
+                    result = Dimension(width, height)
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                } finally {
+                    reader.dispose()
+                }
+            }
+            return result
+        }
+
+        /**
+         * 获得图片的后缀名
+         * @param path
+         * @return
+         */
+        private fun getFileSuffix(path: String?): String? {
+            var result: String? = null
+            if (path != null) {
+                result = ""
+                if (path.lastIndexOf('.') != -1) {
+                    result = path.substring(path.lastIndexOf('.'))
+                    if (result.startsWith(".")) {
+                        result = result.substring(1)
+                    }
+                }
+            }
+            return result
+        }
+
     }
 }

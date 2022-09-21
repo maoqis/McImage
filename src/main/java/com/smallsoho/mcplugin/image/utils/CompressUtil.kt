@@ -1,5 +1,6 @@
 package com.smallsoho.mcplugin.image.utils
 
+import com.smallsoho.mcplugin.image.ImagePlugin
 import java.io.File
 
 class CompressUtil {
