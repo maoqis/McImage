@@ -78,6 +78,7 @@ apply plugin: 'McImage'
 
 最后将我代码中的mctools文件夹放到项目根目录，此文件在[这里下载](https://github.com/Mobcase/McImage/releases)
 
+// mctools.zip  in 1.5.0 version
 ```
 mctools
 ```
@@ -103,6 +104,13 @@ McImageConfig {
   multiThread true  //是否开启多线程处理图片，default true 
   bigImageWhiteList = [] //默认为空，如果添加，大图检测将跳过这些图片
 }
+
+//开发配置，
+// enableWhenDebug true 
+// bigImageWhiteList 里面需要添加检查出来的大图，反复运行check、add ，直到所有大图in list。
+// whiteList 添加应用图标
+// optimizeType "ConvertWebp"
+ 
 ```
 
 ### Thanks

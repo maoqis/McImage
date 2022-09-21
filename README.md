@@ -77,7 +77,7 @@ apply plugin: 'McImage'
 
 Last, put the mctools dir in your project root dir.Download it [here](https://github.com/Mobcase/McImage/releases)
 
-
+// mctools.zip  in 1.5.0 version
 ```
 mctools
 ```
@@ -103,6 +103,13 @@ McImageConfig {
     multiThread true  //Whether open multi-thread processing，default true
     bigImageWhiteList = [] //do not detect big size or large pixels for the images who in the list
 }
+
+//my try，
+// enableWhenDebug true  //for debug mode
+// bigImageWhiteList // run app check report the big image path in build log，then add path to bigImageWhiteList for mark sure img size is ok。
+// whiteList // add you launcher icon 
+// optimizeType "ConvertWebp"
+ 
 ```
 
 ### Thanks
