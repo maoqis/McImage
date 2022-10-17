@@ -2,16 +2,33 @@ apply plugin: 'maven'
 apply plugin: 'signing'
 
 def DEBUG = false
-def VERSION = '1.5.1'
-def GROUP = 'com.smallsoho.mobcase'
-def ARTIFACT = 'McImage'
+def GROUP = groupPackage
+def ARTIFACT = libraryName
+
+
+private String getLibVersion(def libraryVersion) {
+    def versionName = libraryVersion
+    def gitVersion = 'git rev-parse --short HEAD'.execute().text.trim()
+    def tempV
+    if (isSnapshot == true) {
+        tempV = "$versionName-$gitVersion-SNAPSHOT"
+    } else {
+        tempV = "$versionName"
+    }
+    print " version= $tempV "
+    return tempV
+}
+
+
+def VERSION = getLibVersion(libraryVersion)
+
 
 Properties properties = new Properties()
 if (project.rootProject.file('local.properties').exists()) {
     properties.load(project.rootProject.file('local.properties').newDataInputStream())
 }
 
-static def isSnapshot(def version) {
+static def isVersionSnapshot(def version) {
     return version.endsWith("SNAPSHOT")
 }
 
@@ -19,12 +36,12 @@ uploadArchives {
     repositories {
         mavenDeployer {
 
-            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
+//            beforeDeployment { MavenDeployment deployment -> signing.signPom(deployment) }
 
             if (DEBUG) {
                 repository(url: uri("${buildDir}/libs"))
             } else {
-                if (isSnapshot(VERSION)) {
+                if (isVersionSnapshot(VERSION)) {
                     repository(url: uri(properties.getProperty('MAVEN_SNAPSHOT_REPO'))) {
                         authentication(
                                 userName: properties.getProperty('MAVEN_USER_NAME'),
@@ -45,28 +62,28 @@ uploadArchives {
                 artifactId = ARTIFACT
                 version = VERSION
                 project {
-                    name = "McImage"
+                    name = libraryName
                     packaging = "aar"
-                    description = "McImage is a Non-invasive plugin for compress all res in your project."
-                    url = "https://github.com/smallSohoSolo/McImage"
+                    description = libraryDescription
+                    url = gitUrl
 
                     scm {
-                        connection "https://github.com/smallSohoSolo/McImage"
-                        developerConnection "https://github.com/smallSohoSolo/McImage"
-                        url "https://github.com/smallSohoSolo/McImage"
+                        connection siteUrl
+                        developerConnection siteUrl
+                        url siteUrl
                     }
 
                     licenses {
                         license {
                             name "Apache-2.0 License"
-                            url "https://github.com/smallSohoSolo/McImage/blob/master/LICENSE"
+                            url "https://github.com/maoqis/McImage/blob/master/LICENSE"
                             distribution "A permissive license whose main conditions require preservation of copyright and license notices. Contributors provide an express grant of patent rights. Licensed works, modifications, and larger works may be distributed under different terms and without source code."
                         }
                     }
                     developers {
                         developer {
-                            id "smallSohoSolo"
-                            name "smallSohosolo"
+                            id "maoqis"
+                            name "maoqisheng"
                         }
                     }
                 }
@@ -100,6 +117,6 @@ afterEvaluate { project ->
     }
 }
 
-signing {
-    sign configurations.archives
-}
+//signing {
+//    sign configurations.archives
+//}

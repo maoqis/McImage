@@ -64,9 +64,10 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.smallsoho.mobcase:McImage:1.5.1'
+        classpath 'com.xxx.xxx:McImage:1.5.1'
     }
 }
+// modify  ext.groupPackage of build.gradle  to define package
 ```
 
 Then, apply the plugin in your every module.PS: If you have one more Module, you need apply it in every one.
@@ -89,9 +90,9 @@ You can set the config in build.gradle.If you not set this,all config will use d
 ```groovy
 McImageConfig {
     isCheckSize true //Whether to detect image size，default true
-    optimizeType "Compress" //Optimize Type，"ConvertWebp" or "Compress"，default "Compress", "CompressWebp" is a better compression ratio but it don't support api < 18
+    optimizeType "ConvertWebp" //Optimize Type，"ConvertWebp" or "Compress"，default "Compress", "CompressWebp" is a better compression ratio but it don't support api < 18
     maxSize 1*1024*1024 //big image size threshold，default 1MB
-    enableWhenDebug false //switch in debug build，default true
+    enableWhenDebug true //switch in debug build，default true
     isCheckPixels true // Whether to detect image pixels of width and height，default true
     maxWidth 1000 //default 1000
     maxHeight 1000 //default 1000
@@ -99,7 +100,7 @@ McImageConfig {
               "icon_launcher.png"
     ]
     mctoolsDir "$rootDir"
-    isSupportAlphaWebp false  //Whether support convert the Image with Alpha chanel to Webp，default false, the images with alpha chanels will be compressed.if config true, its need api level >=18 or do some compatible measures 
+    isSupportAlphaWebp true  //Whether support convert the Image with Alpha chanel to Webp，default false, the images with alpha chanels will be compressed.if config true, its need api level >=18 or do some compatible measures 
     multiThread true  //Whether open multi-thread processing，default true
     bigImageWhiteList = [] //do not detect big size or large pixels for the images who in the list
 }

@@ -144,7 +144,7 @@ class ImagePlugin : Plugin<Project> {
 
                     val toolsDir = FileUtil.getToolsDir()
 
-                    val csv = "report.csv"
+                    val csv = mcImageProject.name +"_report.csv"
                     val csvFile = File(toolsDir, csv)
                     if (csvFile.exists()) {
                         csvFile.delete()

@@ -65,9 +65,11 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath 'com.smallsoho.mobcase:McImage:1.5.1'
+        classpath 'com.xxx.xxx:McImage:1.5.1'
     }
 }
+
+// 修改  build.gradle的 ext.groupPackage字段  定义包名package
 ```
 
 然后在你想要压缩的Module的build.gradle中应用这个插件，注意如果你有多个Module，请在每个Module的build.gradle文件中apply插件
@@ -90,9 +92,9 @@ mctools
 ```groovy
 McImageConfig {
   isCheckSize true //是否检测图片大小，默认为true
-  optimizeType "Compress" //优化类型，可选"ConvertWebp"，"Compress"，转换为webp或原图压缩，默认Compress，使用ConvertWep需要min sdk >= 18.但是压缩效果更好
+  optimizeType "ConvertWebp" //优化类型，可选"ConvertWebp"，"Compress"，转换为webp或原图压缩，默认Compress，使用ConvertWep需要min sdk >= 18.但是压缩效果更好
   maxSize 1*1024*1024 //大图片阈值，default 1MB
-  enableWhenDebug false //debug下是否可用，default true
+  enableWhenDebug true //debug下是否可用，default true
   isCheckPixels true // 是否检测大像素图片，default true
   maxWidth 1000 //default 1000 如果开启图片宽高检查，默认的最大宽度
   maxHeight 1000 //default 1000 如果开启图片宽高检查，默认的最大高度
@@ -100,7 +102,7 @@ McImageConfig {
              "icon_launcher.png"
   ]
   mctoolsDir "$rootDir"
-  isSupportAlphaWebp false  //是否支持带有透明度的webp，default false,带有透明图的图片会进行压缩
+  isSupportAlphaWebp true  //是否支持带有透明度的webp，default false,带有透明图的图片会进行压缩
   multiThread true  //是否开启多线程处理图片，default true 
   bigImageWhiteList = [] //默认为空，如果添加，大图检测将跳过这些图片
 }

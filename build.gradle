@@ -1,5 +1,5 @@
 apply plugin: 'kotlin'
-apply from: 'publish.gradle'
+
 
 buildscript {
     repositories {
@@ -25,3 +25,15 @@ dependencies {
     implementation localGroovy()
     implementation 'com.android.tools.build:gradle:3.5.0'
 }
+
+ext {
+    groupPackage = 'com.xxx.maoqis'
+    libraryName = 'McImage'
+    libraryDescription = "McImage is a Non-invasive plugin for compress all res in your project."
+    siteUrl = "https://github.com/maoqis/McImage"
+    gitUrl = "https://github.com/maoqis/McImage"
+    libraryVersion = '1.5.1'
+    isSnapshot = true
+}
+
+apply from: 'publish.gradle'
